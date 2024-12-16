@@ -138,7 +138,7 @@ def reduce_score(score_obj, max_voices, repeated_patterns):
 
 
 # Function to find repeated patterns of notes in the score
-def find_repeated_patterns(score_obj, min_length=4):
+def find_repeated_patterns(score_obj, min_length=5):
     patterns = []
     
     # Flatten the score to analyze notes
