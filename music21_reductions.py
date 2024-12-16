@@ -1,3 +1,4 @@
+# Program that reduces a score (.musicxml file) using pattern detection and note ranking.  
 import os
 import music21
 from importlib import util
@@ -76,7 +77,6 @@ else:
 
 print("Done saving original score as PDF and XML.")
 
-# Function to prioritize melody notes in the reduced notes based on the found repeated patterns
 # Function to prioritize melody notes in the reduced notes based on the found repeated patterns
 def prioritize_melody(reduced_notes, repeated_patterns, max_voices):
     priority_notes = set()
