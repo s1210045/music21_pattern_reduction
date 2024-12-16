@@ -12,9 +12,13 @@ test_cordify.py is a program in order to test if the cordify function in music21
 pattern_detection.py is for reducing the score just using the pattern detection method. Could be useful if you would like to refine this technique or use it in conjuction with another reduction method.
 music21_reductions.py is to do reductions with both pattern detection and note ranking. THIS IS THE MAIN PROGRAM!
 
+IMPORTANT NOTE: 
+The program currently is set to detect patterns of 5 notes and marks patterns that appear at least twice in the score. 
+To change the pattern length, change the min_length variable in the find_repeated_patterns function. In the same function you can change the significance threshold to be more than 2. 
+
 Running the program:
 python music21_reductions.py
-The program with ask for a file path location. 
+The program will ask for a file path location. 
 The program will then ask for how many max voices to be retained in the reduced score. 
 The program will then complete the reduction and output a new .musicxml file.
 
