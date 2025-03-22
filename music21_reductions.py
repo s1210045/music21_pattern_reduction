@@ -13,8 +13,8 @@ else:
     exit()
 
 # Set up MuseScore paths
-music21.environment.set('musicxmlPath', r'C:/Program Files/MuseScore 4/bin/Musescore4.exe')
-music21.environment.set('musescoreDirectPNGPath', r'C:/Program Files/MuseScore 4/bin/Musescore4.exe')
+music21.environment.set('musicxmlPath', '/Applications/MuseScore 4.app/Contents/MacOS/mscore')
+music21.environment.set('musescoreDirectPNGPath', '/Applications/MuseScore 4.app/Contents/MacOS/mscore')
 
 # Read the input music xml file and get the user's desired number of parts
 file = input("Please enter a filename:\n")
@@ -103,12 +103,15 @@ def reduce_chord(chord_obj, max_voices, repeated_patterns):
     # Limit the number of notes based on max_voices
     reduced_notes = prioritized_notes[:max_voices]
 
-    # If the chord is too short (i.e., fewer notes than max_voices), only use the original notes
-    return music21.chord.Chord(reduced_notes)
+    dropped_notes = [n for n in notes if n not in reduced_notes]
+
+    return music21.chord.Chord(reduced_notes), dropped_notes
+
 
 # Function to reduce a music21 score to a specific number of voices (without adding extra notes)
 def reduce_score(score_obj, max_voices, repeated_patterns):
     reduced_stream = music21.stream.Part()
+    dropped_notes_stream = music21.stream.Part()
 
     # Preserve the time signature and tempo
     time_signature = score_obj.flatten().getElementsByClass(music21.meter.TimeSignature)
@@ -117,25 +120,33 @@ def reduce_score(score_obj, max_voices, repeated_patterns):
     # Add time signature and tempo to the reduced stream if found
     if time_signature:
         reduced_stream.append(time_signature[0])  
+        dropped_notes_stream.append(time_signature[0])
     if tempo_mark:
-        reduced_stream.append(tempo_mark[0])  
+        reduced_stream.append(tempo_mark[0]) 
+        dropped_notes_stream.append(tempo_mark[0]) 
 
     # Loop through the original score
     for element in score_obj.flatten().notesAndRests:
         if isinstance(element, music21.chord.Chord):
-            reduced_chord = reduce_chord(element, max_voices, repeated_patterns)
+            reduced_chord_obj, dropped_notes = reduce_chord(element, max_voices, repeated_patterns)
             # Only append if the reduced chord has notes (no artificial additions)
-            if reduced_chord.notes:
-                reduced_stream.append(reduced_chord)
+            if reduced_chord_obj.notes:
+                reduced_stream.append(reduced_chord_obj)
+            for dropped in dropped_notes:
+                dropped_note = music21.note.Note(dropped.pitch, quarterLength=element.quarterLength)
+                dropped_note.style.color = 'red'
+                dropped_notes_stream.insert(element.offset, dropped_note)
+
             else:
-                # If no notes are left in the chord, append rests to meet the limit
-                for _ in range(max_voices - len(reduced_chord.notes)):
-                    reduced_stream.append(music21.note.Rest(quarterLength=element.quarterLength))
-        else:
-            reduced_stream.append(element)  # Append rests or other elements
+                reduced_stream.append(element)
+                dropped_notes_stream.append(element)  
 
-    return reduced_stream
+    # Combine both streams into a score
+    full_score = music21.stream.Score()  
+    full_score.insert(0, reduced_stream) 
+    full_score.insert(0, dropped_notes_stream)  
 
+    return full_score  
 
 # Function to find repeated patterns of notes in the score
 def find_repeated_patterns(score_obj, min_length=5):
@@ -217,8 +228,7 @@ if limit <= 1:
 
 else:
     reduced_score = reduce_score(song, limit, repeated_patterns)
-    new_score = music21.stream.Score(id='main_score')
-    new_score.append(reduced_score)  # Append the reduced score directly
+    new_score = reduced_score # score with 2parts
 
 # Apply dynamics to each part
 for dynamic in dynamics:
@@ -227,6 +237,7 @@ for dynamic in dynamics:
 # Output new file
 output = new_score.chordify()
 output.write('musicxml.pdf', fp='MuTest')
-os.rename('MuTrans.pdf', 'dropped_notes.pdf')
-os.rename('MuTrans.xml', 'dropped_notes.xml')
+output.write('musicxml', fp='MuTest.xml')
+os.rename('MuTest.pdf', 'dropped_notes.pdf')
+os.rename('MuTest.xml', 'dropped_notes.xml')
 print("Done!")
